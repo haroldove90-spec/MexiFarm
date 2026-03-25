@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toast } from 'sonner';
 
 const consultationSchema = z.object({
   // Triaje
@@ -61,6 +62,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   const {
     register,
@@ -88,16 +90,43 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
     }
   }, [peso, estatura]);
 
+  const fetchInventory = async () => {
+    const { data } = await supabase
+      .from('inventory')
+      .select('*')
+      .order('nombre', { ascending: true });
+    if (data) setInventory(data);
+  };
+
   useEffect(() => {
-    const fetchInventory = async () => {
-      const { data } = await supabase
-        .from('inventory')
-        .select('*')
-        .order('nombre', { ascending: true });
-      if (data) setInventory(data);
-    };
     fetchInventory();
   }, []);
+
+  const handleLoadSampleInventory = async () => {
+    setLoadingInventory(true);
+    try {
+      const sampleMeds = [
+        { nombre: 'Amoxicilina 500mg', categoria: 'Antibiótico', stock_actual: 50, stock_minimo: 10, precio_unitario: 150, unidad: 'Caja' },
+        { nombre: 'Paracetamol 500mg', categoria: 'Analgésico', stock_actual: 100, stock_minimo: 20, precio_unitario: 50, unidad: 'Caja' },
+        { nombre: 'Ibuprofeno 400mg', categoria: 'Analgésico', stock_actual: 80, stock_minimo: 15, precio_unitario: 80, unidad: 'Caja' },
+        { nombre: 'Loratadina 10mg', categoria: 'Otro', stock_actual: 60, stock_minimo: 10, precio_unitario: 120, unidad: 'Caja' },
+        { nombre: 'Metformina 850mg', categoria: 'Otro', stock_actual: 40, stock_minimo: 10, precio_unitario: 200, unidad: 'Caja' },
+        { nombre: 'Omeprazol 20mg', categoria: 'Otro', stock_actual: 90, stock_minimo: 15, precio_unitario: 110, unidad: 'Caja' },
+        { nombre: 'Salbutamol Spray', categoria: 'Otro', stock_actual: 25, stock_minimo: 5, precio_unitario: 350, unidad: 'Frasco' },
+        { nombre: 'Diclofenaco Gel', categoria: 'Analgésico', stock_actual: 30, stock_minimo: 5, precio_unitario: 180, unidad: 'Tubo' }
+      ];
+
+      const { error } = await supabase.from('inventory').insert(sampleMeds);
+      if (error) throw error;
+      
+      toast.success('Inventario de muestra cargado');
+      fetchInventory();
+    } catch (err: any) {
+      toast.error('Error al cargar inventario: ' + err.message);
+    } finally {
+      setLoadingInventory(false);
+    }
+  };
 
   const addMedication = (item: InventoryItem) => {
     if (medications.find(m => m.id === item.id)) return;
@@ -484,7 +513,17 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
                           <Plus size={18} className="text-slate-300 group-hover:text-[#023E8A]" />
                         </button>
                       )) : (
-                        <div className="p-4 text-center text-slate-400 text-sm">No se encontraron productos</div>
+                        <div className="p-8 text-center space-y-4">
+                          <p className="text-slate-400 text-sm">No se encontraron productos</p>
+                          <button
+                            type="button"
+                            onClick={handleLoadSampleInventory}
+                            disabled={loadingInventory}
+                            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                          >
+                            {loadingInventory ? 'Cargando...' : 'Cargar medicamentos de muestra'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}

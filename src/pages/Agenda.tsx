@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { format, parseISO, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -42,6 +43,7 @@ interface Patient {
 
 const Agenda = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,13 +108,37 @@ const Agenda = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error('Debe iniciar sesión para programar citas');
+      return;
+    }
+
     try {
       const fechaHora = `${newAppointment.fecha}T${newAppointment.hora}:00`;
       
+      // Ensure profile exists for demo user
+      if (user.id === '00000000-0000-0000-0000-000000000001') {
+        const { data: profileExists } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+          
+        if (!profileExists) {
+          await supabase.from('profiles').insert([{
+            id: user.id,
+            full_name: 'Dra. Hilda Martínez',
+            role: 'especialista',
+            especialidad: 'Medicina General'
+          }]);
+        }
+      }
+
       const { error } = await supabase
         .from('appointments')
         .insert([{
           patient_id: newAppointment.patient_id,
+          doctor_id: user.id,
           fecha_hora: fechaHora,
           motivo: newAppointment.motivo,
           estado: 'Programada'
