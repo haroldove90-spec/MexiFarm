@@ -122,7 +122,7 @@ const Agenda = () => {
           .from('profiles')
           .select('id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
           
         if (!profileExists) {
           await supabase.from('profiles').insert([{
@@ -148,6 +148,12 @@ const Agenda = () => {
 
       toast.success('Cita programada con éxito');
       setShowModal(false);
+      setNewAppointment({
+        patient_id: '',
+        fecha: format(new Date(), 'yyyy-MM-dd'),
+        hora: '09:00',
+        motivo: ''
+      });
       fetchData();
     } catch (error: any) {
       toast.error('Error al programar cita: ' + error.message);

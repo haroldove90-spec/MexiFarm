@@ -288,7 +288,7 @@ const Dashboard = () => {
                     <StatCard title="Pacientes" value={patientsCount} icon={UserPlus} progress={78} color="bg-indigo-600" loading={loadingPatients} />
                   </>
                 )}
-                {role === 'medico' && (
+                {role === 'especialista' && (
                   <>
                     <StatCard title="Citas Hoy" value={appointmentsToday} icon={Clock} progress={65} color="bg-[#023E8A]" loading={loadingAppointments} />
                     <StatCard title="Pacientes" value={patientsCount} icon={Users} progress={88} color="bg-[#48CAE4]" loading={loadingPatients} />

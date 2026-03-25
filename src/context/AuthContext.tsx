@@ -35,11 +35,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (demoRole) {
         // Mock user for demo
         const demoId = '00000000-0000-0000-0000-000000000001';
+        const mappedRole = demoRole === 'medico' ? 'especialista' : demoRole;
         setUser({ id: demoId, email: 'demo@mediconnect.pro' } as any);
         setProfile({
           id: demoId,
           full_name: 'Dra. Hilda Martínez',
-          role: demoRole as UserRole,
+          role: mappedRole as UserRole,
           cedula: '12345678',
           especialidad: 'Medicina General'
         });
