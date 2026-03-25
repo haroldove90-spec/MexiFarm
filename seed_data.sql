@@ -55,18 +55,17 @@ END $$;
 DO $$
 DECLARE
     p_id UUID;
-    d_id UUID := '00000000-0000-0000-0000-000000000000'; -- Placeholder doctor_id
+    d_id UUID := '00000000-0000-0000-0000-000000000001'; -- Demo doctor ID
     i INTEGER := 0;
 BEGIN
     FOR p_id IN (SELECT id FROM patients LIMIT 10) LOOP
-        INSERT INTO appointments (patient_id, doctor_id, start_time, end_time, title, status)
+        INSERT INTO appointments (patient_id, doctor_id, fecha_hora, motivo, estado)
         VALUES (
             p_id, 
             d_id, 
             NOW() + (i || ' days')::interval + '2 hours'::interval, 
-            NOW() + (i || ' days')::interval + '3 hours'::interval, 
             'Consulta de seguimiento - ' || (SELECT nombre FROM patients WHERE id = p_id), 
-            'scheduled'
+            'Programada'
         );
         i := i + 1;
     END LOOP;

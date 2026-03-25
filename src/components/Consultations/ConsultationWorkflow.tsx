@@ -68,6 +68,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
     register,
     handleSubmit,
     watch,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<ConsultationFormData>({
     resolver: zodResolver(consultationSchema),
@@ -193,6 +194,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
   };
 
   const onSubmit = async (data: ConsultationFormData) => {
+    console.log('Submitting consultation form...', data);
     setError(null);
     try {
       // Get user from auth session or demo mode
@@ -215,6 +217,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
             .single();
             
           if (!profileExists) {
+            console.log('Creating demo profile...');
             await supabase.from('profiles').insert([{
               id: userId,
               full_name: 'Dra. Hilda Martínez',
@@ -223,10 +226,11 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
             }]);
           }
         } else {
-          throw new Error('No se encontró sesión de usuario');
+          throw new Error('No se encontró sesión de usuario. Por favor inicie sesión.');
         }
       }
 
+      console.log('Saving consultation for patient:', patient.id);
       // 1. Save Consultation
       const { data: consultation, error: consError } = await supabase
         .from('consultations')
@@ -247,7 +251,12 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
         .select()
         .single();
 
-      if (consError) throw consError;
+      if (consError) {
+        console.error('Consultation insert error:', consError);
+        throw consError;
+      }
+
+      console.log('Consultation saved successfully:', consultation.id);
 
       // 2. Create Prescription record if there are medications
       if (medications.length > 0) {
@@ -288,21 +297,26 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
           if (med.entregado_en_clinica) {
             const item = inventory.find(i => i.id === med.id);
             if (item) {
+              console.log(`Subtracting stock for ${item.nombre}...`);
               await supabase
                 .from('inventory')
-                .update({ stock_actual: item.stock_actual - 1 })
+                .update({ stock_actual: Math.max(0, item.stock_actual - 1) })
                 .eq('id', med.id);
             }
           }
         }
       }
 
+      console.log('Workflow complete, showing success screen');
       setSavedConsultation(consultation);
       setIsSuccess(true);
+      toast.success('Consulta guardada exitosamente');
       onSuccess();
     } catch (err: any) {
       console.error('Error saving consultation:', err);
-      setError(err.message || 'Error al guardar la consulta');
+      const errorMessage = err.message || 'Error al guardar la consulta';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -603,7 +617,21 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
           {step < 3 ? (
             <button
               type="button"
-              onClick={() => setStep(step + 1)}
+              onClick={async () => {
+                // Validate current step fields
+                let isValid = false;
+                if (step === 1) {
+                  isValid = await trigger(['peso', 'estatura', 'temperatura', 'presion']);
+                } else if (step === 2) {
+                  isValid = await trigger(['diagnostico', 'plan_tratamiento']);
+                }
+                
+                if (isValid) {
+                  setStep(step + 1);
+                } else {
+                  toast.error('Por favor complete los campos requeridos correctamente');
+                }
+              }}
               className="px-8 py-3 rounded-xl font-bold text-white bg-[#023E8A] hover:bg-[#0077B6] shadow-lg shadow-[#023E8A]/20 transition-all text-sm flex items-center gap-2"
             >
               Siguiente
@@ -614,6 +642,20 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
               form="consultation-form"
               type="submit"
               disabled={isSubmitting}
+              onClick={async (e) => {
+                // Check for validation errors before submitting
+                const isValid = await trigger();
+                if (!isValid) {
+                  e.preventDefault();
+                  toast.error('Hay errores en el formulario. Por favor revise los pasos anteriores.');
+                  // Find first step with error and go there
+                  if (errors.peso || errors.estatura || errors.temperatura || errors.presion) {
+                    setStep(1);
+                  } else if (errors.diagnostico || errors.plan_tratamiento) {
+                    setStep(2);
+                  }
+                }
+              }}
               className="px-8 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-sm flex items-center gap-2 disabled:opacity-50"
             >
               <Save size={18} />

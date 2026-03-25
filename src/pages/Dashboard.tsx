@@ -139,8 +139,8 @@ const Dashboard = () => {
       const { count } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .gte('start_time', `${today}T00:00:00`)
-        .lte('start_time', `${today}T23:59:59`);
+        .gte('fecha_hora', `${today}T00:00:00`)
+        .lte('fecha_hora', `${today}T23:59:59`);
       return count || 0;
     }
   });

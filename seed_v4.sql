@@ -48,12 +48,12 @@ BEGIN
 
     IF doc_id IS NOT NULL THEN
         -- 5 Appointments for this week
-        INSERT INTO appointments (patient_id, doctor_id, start_time, end_time, title) VALUES
-        (p1_id, doc_id, NOW() + interval '1 day', NOW() + interval '1 day 30 minutes', 'Consulta General - Alejandro'),
-        (p2_id, doc_id, NOW() + interval '2 days', NOW() + interval '2 days 30 minutes', 'Seguimiento - Beatriz'),
-        (p3_id, doc_id, NOW() + interval '1 day 2 hours', NOW() + interval '1 day 2 hours 30 minutes', 'Revisión - Carlos'),
-        (p4_id, doc_id, NOW() + interval '3 days', NOW() + interval '3 days 30 minutes', 'Consulta - Daniela'),
-        (p5_id, doc_id, NOW() + interval '4 days', NOW() + interval '4 days 30 minutes', 'Urgencia - Eduardo');
+        INSERT INTO appointments (patient_id, doctor_id, fecha_hora, motivo, estado) VALUES
+        (p1_id, doc_id, NOW() + interval '1 day', 'Consulta General - Alejandro', 'Programada'),
+        (p2_id, doc_id, NOW() + interval '2 days', 'Seguimiento - Beatriz', 'Programada'),
+        (p3_id, doc_id, NOW() + interval '1 day 2 hours', 'Revisión - Carlos', 'Programada'),
+        (p4_id, doc_id, NOW() + interval '3 days', 'Consulta - Daniela', 'Programada'),
+        (p5_id, doc_id, NOW() + interval '4 days', 'Urgencia - Eduardo', 'Programada');
 
         -- 3 Consultations
         INSERT INTO consultations (patient_id, doctor_id, diagnostico, plan_tratamiento, signos_vitales, receta_json) VALUES
