@@ -7,6 +7,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { supabase } from '../lib/supabase';
 import { format, parseISO, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -40,6 +41,7 @@ interface Patient {
 }
 
 const Agenda = () => {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,10 +255,24 @@ const Agenda = () => {
                           {format(parseISO(apt.fecha_hora), 'hh:mm a')}
                         </p>
                       </div>
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        apt.estado === 'Completada' ? 'bg-emerald-500' : 
-                        apt.estado === 'Cancelada' ? 'bg-red-500' : 'bg-blue-500'
-                      }`} />
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          apt.estado === 'Completada' ? 'bg-emerald-500' : 
+                          apt.estado === 'Cancelada' ? 'bg-red-500' : 'bg-blue-500'
+                        }`} />
+                        {apt.estado === 'Programada' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/pacientes');
+                              toast.info('Seleccione al paciente para iniciar la consulta');
+                            }}
+                            className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black hover:bg-emerald-600 hover:text-white transition-all"
+                          >
+                            ATENDER
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))

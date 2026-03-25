@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 const patientSchema = z.object({
   nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
-  curp: z.string().regex(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/, 'El formato del CURP es inválido'),
+  curp: z.string().refine(val => val === "" || /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/.test(val), 'El formato del CURP es inválido'),
   fecha_nacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (AAAA-MM-DD)'),
   alergias: z.string().optional(),
   contacto_emergencia: z.string().min(5, 'Ingrese un contacto de emergencia válido'),
@@ -33,23 +33,25 @@ const AddPatientForm: React.FC<AddPatientFormProps> = ({ onClose, onSuccess }) =
   const onSubmit = async (data: PatientFormData) => {
     setError(null);
     try {
-      // Check for duplicate CURP
-      const { data: existing, error: checkError } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('curp', data.curp.toUpperCase())
-        .single();
+      // Check for duplicate CURP if provided
+      if (data.curp) {
+        const { data: existing, error: checkError } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('curp', data.curp.toUpperCase())
+          .single();
 
-      if (existing) {
-        setError('Ya existe un paciente registrado con este CURP.');
-        return;
+        if (existing) {
+          setError('Ya existe un paciente registrado con este CURP.');
+          return;
+        }
       }
 
       const { error: insertError } = await supabase
         .from('patients')
         .insert([{
           nombre: data.nombre,
-          curp: data.curp.toUpperCase(),
+          curp: data.curp ? data.curp.toUpperCase() : null,
           fecha_nacimiento: data.fecha_nacimiento,
           alergias: data.alergias ? data.alergias.split(',').map(s => s.trim()) : [],
           contacto_emergencia: data.contacto_emergencia,

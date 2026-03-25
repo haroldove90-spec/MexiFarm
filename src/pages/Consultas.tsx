@@ -15,7 +15,8 @@ import {
   Download,
   Clock,
   Edit2,
-  Database
+  Database,
+  Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TableSkeleton } from '../components/UI/Skeleton';
@@ -84,6 +85,16 @@ const Consultas = () => {
   const handleLoadSampleData = async () => {
     setIsLoadingSample(true);
     try {
+      // Get current user or demo user
+      let userId: string;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      } else {
+        const demoRole = localStorage.getItem('demo_role');
+        userId = demoRole ? 'demo-user' : '00000000-0000-0000-0000-000000000000';
+      }
+
       // First, check if we have any patients to link to
       const { data: patients } = await supabase.from('patients').select('id').limit(1);
       
@@ -110,6 +121,7 @@ const Consultas = () => {
       const sampleConsultations = [
         {
           patient_id: patientId,
+          doctor_id: userId,
           diagnostico: 'Faringoamigdalitis aguda (J03.9)',
           plan_tratamiento: 'Reposo relativo, hidratación abundante y tratamiento farmacológico por 7 días.',
           signos_vitales: { peso: 75, estatura: 170, temp: 38.5, presion: '120/80' },
@@ -117,6 +129,7 @@ const Consultas = () => {
         },
         {
           patient_id: patientId,
+          doctor_id: userId,
           diagnostico: 'Gastritis aguda (K29.1)',
           plan_tratamiento: 'Dieta blanda, evitar irritantes y tratamiento antiácido.',
           signos_vitales: { peso: 72, estatura: 170, temp: 36.6, presion: '110/70' },
@@ -150,6 +163,13 @@ const Consultas = () => {
           <p className="text-slate-500 mt-2 font-medium">Historial centralizado de atenciones y diagnósticos clínicos</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/pacientes')}
+            className="flex items-center gap-2 px-6 py-3 bg-[#023E8A] text-white rounded-2xl hover:bg-[#0047AB] transition-all active:scale-95 text-sm font-bold shadow-lg shadow-blue-900/20"
+          >
+            <Plus size={18} />
+            Nueva Consulta
+          </button>
           <button 
             onClick={handleLoadSampleData}
             disabled={isLoadingSample}

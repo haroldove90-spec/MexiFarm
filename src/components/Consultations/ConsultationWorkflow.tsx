@@ -166,15 +166,28 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
   const onSubmit = async (data: ConsultationFormData) => {
     setError(null);
     try {
+      // Get user from auth session or demo mode
+      let userId: string;
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No se encontró sesión de usuario');
+      
+      if (user) {
+        userId = user.id;
+      } else {
+        // Check for demo mode
+        const demoRole = localStorage.getItem('demo_role');
+        if (demoRole) {
+          userId = 'demo-user';
+        } else {
+          throw new Error('No se encontró sesión de usuario');
+        }
+      }
 
       // 1. Save Consultation
       const { data: consultation, error: consError } = await supabase
         .from('consultations')
         .insert([{
           patient_id: patient.id,
-          doctor_id: user.id,
+          doctor_id: userId,
           diagnostico: data.diagnostico,
           plan_tratamiento: data.plan_tratamiento,
           signos_vitales: {

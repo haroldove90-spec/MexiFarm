@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 const patientSchema = z.object({
   nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
-  curp: z.string().regex(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/, 'El formato del CURP es inválido'),
+  curp: z.string().refine(val => val === "" || /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/.test(val), 'El formato del CURP es inválido'),
   fecha_nacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (AAAA-MM-DD)'),
   alergias: z.string().optional(),
   contacto_emergencia: z.string().min(5, 'Ingrese un contacto de emergencia válido'),
@@ -34,7 +34,7 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({ patient, onClose })
     resolver: zodResolver(patientSchema),
     defaultValues: {
       nombre: patient.nombre,
-      curp: patient.curp,
+      curp: patient.curp || '',
       fecha_nacimiento: patient.fecha_nacimiento,
       alergias: patient.alergias.join(', '),
       contacto_emergencia: patient.contacto_emergencia || '',
@@ -47,7 +47,7 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({ patient, onClose })
         .from('patients')
         .update({
           nombre: data.nombre,
-          curp: data.curp,
+          curp: data.curp ? data.curp.toUpperCase() : null,
           fecha_nacimiento: data.fecha_nacimiento,
           alergias: data.alergias ? data.alergias.split(',').map(s => s.trim()) : [],
           contacto_emergencia: data.contacto_emergencia,
