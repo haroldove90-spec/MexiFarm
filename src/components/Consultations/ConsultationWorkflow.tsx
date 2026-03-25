@@ -194,6 +194,12 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
   };
 
   const onSubmit = async (data: ConsultationFormData) => {
+    // Prevent submission if not on the final step (e.g., when hitting Enter on step 2)
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
+
     console.log('Submitting consultation form...', data);
     setError(null);
     try {
