@@ -317,7 +317,7 @@ const FulfillmentHistory = () => {
         .from('consultations')
         .insert([{
           patient_id: patientId,
-          doctor_id: (await supabase.auth.getUser()).data.user?.id,
+          doctor_id: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000001',
           diagnostico: 'Control de rutina',
           plan_tratamiento: 'Continuar con medicación habitual.',
           signos_vitales: { peso: 75, temp: 36.6, presion: '110/70' },
@@ -337,7 +337,7 @@ const FulfillmentHistory = () => {
         .insert([{
           consultation_id: consultation.id,
           status: 'surtido',
-          despachado_por: (await supabase.auth.getUser()).data.user?.id,
+          despachado_por: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000001',
           notes: 'Surtido completo de medicamentos de control.'
         }]);
 

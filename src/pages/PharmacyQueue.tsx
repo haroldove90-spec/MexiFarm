@@ -297,7 +297,7 @@ const PharmacyQueue = () => {
         .from('consultations')
         .insert([{
           patient_id: patientId,
-          doctor_id: (await supabase.auth.getUser()).data.user?.id,
+          doctor_id: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000001',
           diagnostico: 'Infección respiratoria leve',
           plan_tratamiento: 'Tratamiento ambulatorio con antibióticos y analgésicos.',
           signos_vitales: { peso: 70, temp: 37.2, presion: '120/80' },

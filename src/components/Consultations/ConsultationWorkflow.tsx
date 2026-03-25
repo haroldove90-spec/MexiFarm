@@ -176,7 +176,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
         // Check for demo mode
         const demoRole = localStorage.getItem('demo_role');
         if (demoRole) {
-          userId = 'demo-user';
+          userId = '00000000-0000-0000-0000-000000000001';
         } else {
           throw new Error('No se encontró sesión de usuario');
         }
@@ -204,18 +204,33 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
 
       if (consError) throw consError;
 
-      // 2. Create Prescription Fulfillment record if there are medications
+      // 2. Create Prescription record if there are medications
       if (medications.length > 0) {
+        const { data: prescription, error: presError } = await supabase
+          .from('prescriptions')
+          .insert([{
+            consultation_id: consultation.id,
+            medicamentos: medications,
+            indicaciones: data.plan_tratamiento,
+            estado: 'Pendiente'
+          }])
+          .select()
+          .single();
+
+        if (presError) throw presError;
+
+        // 3. Create Prescription Fulfillment record
         const { error: fulfillError } = await supabase
           .from('prescription_fulfillment')
           .insert([{
+            prescription_id: prescription.id,
             consultation_id: consultation.id,
             status: 'pendiente'
           }]);
         
         if (fulfillError) throw fulfillError;
 
-        // 3. Subtract stock for items delivered in clinic
+        // 4. Subtract stock for items delivered in clinic
         for (const med of medications) {
           if (med.entregado_en_clinica) {
             const item = inventory.find(i => i.id === med.id);

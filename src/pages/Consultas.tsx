@@ -92,7 +92,7 @@ const Consultas = () => {
         userId = user.id;
       } else {
         const demoRole = localStorage.getItem('demo_role');
-        userId = demoRole ? 'demo-user' : '00000000-0000-0000-0000-000000000000';
+        userId = demoRole ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000000';
       }
 
       // First, check if we have any patients to link to
