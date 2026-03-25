@@ -57,7 +57,7 @@ const Reports = () => {
       // Header
       doc.setFontSize(22);
       doc.setTextColor(2, 62, 138); // #023E8A
-      doc.text('Farmacia América - Reporte de Actividad', 14, 22);
+      doc.text('MexiFarm - Reporte de Actividad', 14, 22);
       
       doc.setFontSize(12);
       doc.setTextColor(100, 116, 139); // Slate-500
@@ -125,7 +125,7 @@ const Reports = () => {
         doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
       }
       
-      doc.save('reporte-farmacia-america.pdf');
+      doc.save('reporte-mexifarm.pdf');
       toast.success('Reporte exportado exitosamente');
     } catch (error) {
       console.error('Error exporting PDF:', error);

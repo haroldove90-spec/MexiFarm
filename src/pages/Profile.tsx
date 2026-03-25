@@ -25,7 +25,7 @@ const Profile = () => {
               </button>
             </div>
             
-            <h2 className="text-xl font-bold text-slate-900">{profile?.full_name || 'Dr. Harold Demo'}</h2>
+            <h2 className="text-xl font-bold text-slate-900">{profile?.full_name || 'Dra. Hilda Martínez'}</h2>
             <p className="text-xs font-black text-[#023E8A] uppercase tracking-widest mt-2 opacity-70">{role || 'Médico Especialista'}</p>
             
             <div className="mt-8 pt-8 border-t border-slate-100 flex justify-center gap-4">
@@ -57,7 +57,7 @@ const Profile = () => {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <Mail size={12} /> Correo Electrónico
                 </p>
-                <p className="text-sm font-bold text-slate-700">harold.demo@farmaciaamerica.com</p>
+                <p className="text-sm font-bold text-slate-700">hilda.martinez@mexifarm.com</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -81,7 +81,7 @@ const Profile = () => {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <MapPin size={12} /> Consultorio
                 </p>
-                <p className="text-sm font-bold text-slate-700">Farmacia América - Sucursal Central, Consultorio 4B</p>
+                <p className="text-sm font-bold text-slate-700">MexiFarm - Sucursal Central, Consultorio 4B</p>
               </div>
             </div>
           </div>

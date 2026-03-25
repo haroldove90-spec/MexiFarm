@@ -75,7 +75,7 @@ const InstallPWA = () => {
           <div className="relative flex items-start gap-5">
             <div className="shrink-0 w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center p-2 border border-slate-100">
               <img 
-                src="https://appdesignproyectos.com/farmaciaamerica.png" 
+                src="https://appdesignproyectos.com/mexifarm.jpg" 
                 alt="Logo" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
@@ -84,7 +84,7 @@ const InstallPWA = () => {
 
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">Instalar Farmacia América</h3>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Instalar MexiFarm</h3>
                 <button 
                   onClick={() => setShowPopup(false)}
                   className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400"

@@ -16,9 +16,11 @@ import {
   X, 
   CheckCircle2, 
   AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CardSkeleton } from '../components/UI/Skeleton';
+import AddPatientForm from '../components/Patients/AddPatientForm';
 
 interface Appointment {
   id: string;
@@ -43,6 +45,7 @@ const Agenda = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddingPatient, setIsAddingPatient] = useState(false);
   const [newAppointment, setNewAppointment] = useState({
     patient_id: '',
     fecha: format(new Date(), 'yyyy-MM-dd'),
@@ -174,13 +177,22 @@ const Agenda = () => {
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Agenda Médica</h1>
           <p className="text-slate-500 mt-1 font-medium">Gestiona tus citas y horarios de consulta</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-[#023E8A] text-white rounded-2xl text-sm font-bold hover:bg-[#0047AB] transition-all shadow-xl shadow-blue-900/20 active:scale-95 group w-full md:w-auto"
-        >
-          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-          Nueva Cita
-        </button>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <button 
+            onClick={() => fetchData()}
+            className="p-3 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 rounded-2xl hover:bg-white hover:shadow-md transition-all active:scale-95"
+            title="Actualizar datos"
+          >
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-[#023E8A] text-white rounded-2xl text-sm font-bold hover:bg-[#0047AB] transition-all shadow-xl shadow-blue-900/20 active:scale-95 group"
+          >
+            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+            Nueva Cita
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-8">
@@ -318,7 +330,17 @@ const Agenda = () => {
             
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 ml-1">Paciente</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-sm font-black text-slate-700">Paciente</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingPatient(true)}
+                    className="text-xs font-bold text-[#023E8A] hover:underline flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    Nuevo Paciente
+                  </button>
+                </div>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <select
@@ -394,6 +416,16 @@ const Agenda = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {isAddingPatient && (
+        <AddPatientForm 
+          onClose={() => setIsAddingPatient(false)}
+          onSuccess={() => {
+            fetchData();
+            toast.success('Paciente registrado correctamente');
+          }}
+        />
       )}
 
       <style>{`

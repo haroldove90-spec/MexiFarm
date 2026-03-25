@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { supabase, Consultation } from '../lib/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -13,26 +13,22 @@ import {
   ChevronRight,
   RefreshCw,
   Download,
-  Clock
+  Clock,
+  Edit2,
+  Database
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TableSkeleton } from '../components/UI/Skeleton';
-
-interface Consultation {
-  id: string;
-  patient_id: string;
-  doctor_id: string;
-  diagnostico: string;
-  plan_tratamiento: string;
-  created_at: string;
-  patient?: {
-    nombre: string;
-  };
-}
+import EditConsultationModal from '../components/Modals/EditConsultationModal';
+import { toast } from 'sonner';
 
 const Consultas = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingConsultation, setEditingConsultation] = useState<Consultation | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
 
   const { data: consultations, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['all-consultations'],
@@ -43,9 +39,102 @@ const Consultas = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Consultation[];
+      return data as (Consultation & { patient?: { nombre: string } })[];
     }
   });
+
+  const handleExportCSV = () => {
+    if (!consultations || consultations.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = ['Fecha', 'Paciente', 'Diagnóstico', 'Plan de Tratamiento'];
+      const rows = consultations.map(c => [
+        format(new Date(c.created_at), 'yyyy-MM-dd HH:mm'),
+        c.patient?.nombre || 'N/A',
+        c.diagnostico.replace(/,/g, ';'),
+        c.plan_tratamiento.replace(/,/g, ';')
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(r => r.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `consultas_${format(new Date(), 'yyyyMMdd')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Datos exportados correctamente');
+    } catch (error) {
+      toast.error('Error al exportar datos');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleLoadSampleData = async () => {
+    setIsLoadingSample(true);
+    try {
+      // First, check if we have any patients to link to
+      const { data: patients } = await supabase.from('patients').select('id').limit(1);
+      
+      let patientId;
+      if (!patients || patients.length === 0) {
+        // Create a sample patient if none exists
+        const { data: newPatient, error: pError } = await supabase
+          .from('patients')
+          .insert([{
+            nombre: 'Paciente de Ejemplo',
+            curp: 'EJEMPLO1234567890',
+            fecha_nacimiento: '1990-01-01',
+            alergias: ['Ninguna']
+          }])
+          .select()
+          .single();
+        
+        if (pError) throw pError;
+        patientId = newPatient.id;
+      } else {
+        patientId = patients[0].id;
+      }
+
+      const sampleConsultations = [
+        {
+          patient_id: patientId,
+          diagnostico: 'Faringoamigdalitis aguda (J03.9)',
+          plan_tratamiento: 'Reposo relativo, hidratación abundante y tratamiento farmacológico por 7 días.',
+          signos_vitales: { peso: 75, estatura: 170, temp: 38.5, presion: '120/80' },
+          receta_json: [{ nombre: 'Amoxicilina', dosis: '500mg', frecuencia: 'cada 8 horas', duracion: '7 días' }]
+        },
+        {
+          patient_id: patientId,
+          diagnostico: 'Gastritis aguda (K29.1)',
+          plan_tratamiento: 'Dieta blanda, evitar irritantes y tratamiento antiácido.',
+          signos_vitales: { peso: 72, estatura: 170, temp: 36.6, presion: '110/70' },
+          receta_json: [{ nombre: 'Omeprazol', dosis: '20mg', frecuencia: 'ayunas', duracion: '14 días' }]
+        }
+      ];
+
+      const { error } = await supabase.from('consultations').insert(sampleConsultations);
+      if (error) throw error;
+
+      toast.success('Datos de ejemplo cargados correctamente');
+      queryClient.invalidateQueries({ queryKey: ['all-consultations'] });
+    } catch (error: any) {
+      toast.error('Error al cargar datos de ejemplo: ' + error.message);
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
 
   const filteredConsultations = consultations?.filter(c => 
     c.patient?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,6 +150,15 @@ const Consultas = () => {
           <p className="text-slate-500 mt-2 font-medium">Historial centralizado de atenciones y diagnósticos clínicos</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={handleLoadSampleData}
+            disabled={isLoadingSample}
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl hover:bg-emerald-100 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+            title="Cargar datos de ejemplo"
+          >
+            <Database size={18} className={isLoadingSample ? 'animate-bounce' : ''} />
+            {isLoadingSample ? 'Cargando...' : 'Datos de Ejemplo'}
+          </button>
           <button 
             onClick={() => refetch()}
             className="p-3 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 rounded-2xl hover:bg-white hover:shadow-md transition-all active:scale-95"
@@ -91,9 +189,13 @@ const Consultas = () => {
               <Filter size={18} />
               Filtros
             </button>
-            <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3.5 bg-white/60 border border-slate-200 text-slate-600 rounded-2xl text-sm font-bold hover:bg-white hover:shadow-sm transition-all">
-              <Download size={18} />
-              Exportar
+            <button 
+              onClick={handleExportCSV}
+              disabled={isExporting}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3.5 bg-white/60 border border-slate-200 text-slate-600 rounded-2xl text-sm font-bold hover:bg-white hover:shadow-sm transition-all disabled:opacity-50"
+            >
+              <Download size={18} className={isExporting ? 'animate-bounce' : ''} />
+              {isExporting ? 'Exportando...' : 'Exportar'}
             </button>
           </div>
         </div>
@@ -170,9 +272,31 @@ const Consultas = () => {
                     </div>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <button className="p-2.5 text-slate-400 group-hover:text-[#023E8A] group-hover:bg-blue-50 rounded-xl transition-all translate-x-4 group-hover:translate-x-0 opacity-0 group-hover:opacity-100">
-                      <ChevronRight size={24} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/pacientes/${consultation.patient_id}/historial`);
+                        }}
+                        className="p-2.5 text-slate-400 hover:text-[#023E8A] hover:bg-blue-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        title="Ver Historial"
+                      >
+                        <FileText size={20} />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingConsultation(consultation);
+                        }}
+                        className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        title="Editar Consulta"
+                      >
+                        <Edit2 size={20} />
+                      </button>
+                      <button className="p-2.5 text-slate-400 group-hover:text-[#023E8A] group-hover:bg-blue-50 rounded-xl transition-all translate-x-4 group-hover:translate-x-0 opacity-0 group-hover:opacity-100">
+                        <ChevronRight size={24} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -180,6 +304,16 @@ const Consultas = () => {
           </table>
         </div>
       </div>
+
+      {editingConsultation && (
+        <EditConsultationModal 
+          consultation={editingConsultation}
+          onClose={() => {
+            setEditingConsultation(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 };

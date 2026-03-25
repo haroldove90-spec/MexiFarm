@@ -9,16 +9,168 @@ import {
   Calendar, 
   ChevronRight, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Database,
+  Download,
+  Edit2,
+  X,
+  Save,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { supabase, PrescriptionStatus, Consultation, Patient } from '../lib/supabase';
 import { cn } from '../lib/utils';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface PrescriptionWithDetails extends PrescriptionStatus {
   consultation: Consultation & {
     patient: Patient;
   };
 }
+
+const EditPrescriptionModal = ({ prescription, onClose, onSave }: { prescription: PrescriptionWithDetails, onClose: () => void, onSave: () => void }) => {
+  const [meds, setMeds] = useState<any[]>(prescription.consultation.receta_json || []);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('consultations')
+        .update({ receta_json: meds })
+        .eq('id', prescription.consultation_id);
+
+      if (error) throw error;
+      toast.success('Receta actualizada correctamente');
+      onSave();
+      onClose();
+    } catch (error: any) {
+      toast.error('Error al guardar cambios: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const addMed = () => {
+    setMeds([...meds, { nombre: '', dosis: '', frecuencia: '', duracion: '' }]);
+  };
+
+  const removeMed = (index: number) => {
+    setMeds(meds.filter((_, i) => i !== index));
+  };
+
+  const updateMed = (index: number, field: string, value: string) => {
+    const newMeds = [...meds];
+    newMeds[index] = { ...newMeds[index], [field]: value };
+    setMeds(newMeds);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#023E8A] rounded-2xl flex items-center justify-center text-white">
+              <Pill size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Editar Receta</h2>
+              <p className="text-sm text-slate-500">Modifique los medicamentos para {prescription.consultation.patient.nombre}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Medicamentos</h3>
+            <button 
+              onClick={addMed}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#023E8A] rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors"
+            >
+              <Plus size={14} />
+              Agregar Item
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {meds.map((med, idx) => (
+              <div key={idx} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 relative group">
+                <button 
+                  onClick={() => removeMed(idx)}
+                  className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Medicamento</label>
+                    <input 
+                      value={med.nombre}
+                      onChange={(e) => updateMed(idx, 'nombre', e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                      placeholder="Nombre del fármaco"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Dosis</label>
+                      <input 
+                        value={med.dosis}
+                        onChange={(e) => updateMed(idx, 'dosis', e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                        placeholder="500mg"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frec</label>
+                      <input 
+                        value={med.frecuencia}
+                        onChange={(e) => updateMed(idx, 'frecuencia', e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                        placeholder="c/8h"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Dur</label>
+                      <input 
+                        value={med.duracion}
+                        onChange={(e) => updateMed(idx, 'duracion', e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                        placeholder="7d"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+          <button 
+            onClick={onClose}
+            className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-4 bg-[#023E8A] text-white rounded-2xl font-bold hover:bg-[#0047AB] shadow-lg shadow-[#023E8A]/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PharmacyQueue = () => {
   const [prescriptions, setPrescriptions] = useState<PrescriptionWithDetails[]>([]);
@@ -27,6 +179,9 @@ const PharmacyQueue = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionWithDetails | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [editingPrescription, setEditingPrescription] = useState<PrescriptionWithDetails | null>(null);
 
   const fetchPrescriptions = async () => {
     try {
@@ -71,6 +226,109 @@ const PharmacyQueue = () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const handleExportCSV = () => {
+    if (!prescriptions || prescriptions.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = ['Folio', 'Fecha', 'Paciente', 'CURP', 'Medicamentos', 'Estado'];
+      const rows = prescriptions.map(p => [
+        p.id.slice(0, 8).toUpperCase(),
+        format(new Date(p.created_at), 'yyyy-MM-dd HH:mm'),
+        p.consultation.patient.nombre,
+        p.consultation.patient.curp,
+        (p.consultation.receta_json || []).map((m: any) => m.nombre).join('; '),
+        p.status
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(r => r.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `cola_farmacia_${format(new Date(), 'yyyyMMdd')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Datos exportados correctamente');
+    } catch (error) {
+      toast.error('Error al exportar datos');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleLoadSampleData = async () => {
+    setIsLoadingSample(true);
+    try {
+      // 1. Check for a sample patient
+      let patientId;
+      const { data: patients } = await supabase.from('patients').select('id').limit(1);
+      
+      if (!patients || patients.length === 0) {
+        const { data: newPatient, error: pError } = await supabase
+          .from('patients')
+          .insert([{
+            nombre: 'Paciente de Farmacia Ejemplo',
+            curp: 'FARM1234567890HXX',
+            fecha_nacimiento: '1985-05-15',
+            alergias: ['Lactosa']
+          }])
+          .select()
+          .single();
+        
+        if (pError) throw pError;
+        patientId = newPatient.id;
+      } else {
+        patientId = patients[0].id;
+      }
+
+      // 2. Create a sample consultation with prescription
+      const { data: consultation, error: cError } = await supabase
+        .from('consultations')
+        .insert([{
+          patient_id: patientId,
+          doctor_id: (await supabase.auth.getUser()).data.user?.id,
+          diagnostico: 'Infección respiratoria leve',
+          plan_tratamiento: 'Tratamiento ambulatorio con antibióticos y analgésicos.',
+          signos_vitales: { peso: 70, temp: 37.2, presion: '120/80' },
+          receta_json: [
+            { nombre: 'Paracetamol', dosis: '500mg', frecuencia: 'cada 8 horas', duracion: '3 días' },
+            { nombre: 'Amoxicilina', dosis: '500mg', frecuencia: 'cada 12 horas', duracion: '7 días' }
+          ]
+        }])
+        .select()
+        .single();
+
+      if (cError) throw cError;
+
+      // 3. Create record in prescription_fulfillment
+      const { error: fError } = await supabase
+        .from('prescription_fulfillment')
+        .insert([{
+          consultation_id: consultation.id,
+          status: 'pendiente'
+        }]);
+
+      if (fError) throw fError;
+
+      toast.success('Datos de ejemplo cargados correctamente');
+      fetchPrescriptions();
+    } catch (error: any) {
+      toast.error('Error al cargar datos de ejemplo: ' + error.message);
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
 
   const handleFulfill = async (id: string) => {
     setIsSubmitting(true);
@@ -151,9 +409,20 @@ const PharmacyQueue = () => {
           <h1 className="text-3xl font-bold text-slate-900">Cola de Farmacia</h1>
           <p className="text-slate-500 mt-1">Gestión de surtido de recetas en tiempo real</p>
         </div>
-        <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold uppercase tracking-wider">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          En Vivo
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleLoadSampleData}
+            disabled={isLoadingSample}
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl hover:bg-emerald-100 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+            title="Cargar datos de ejemplo"
+          >
+            <Database size={18} className={isLoadingSample ? 'animate-bounce' : ''} />
+            {isLoadingSample ? 'Cargando...' : 'Datos de Ejemplo'}
+          </button>
+          <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold uppercase tracking-wider">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            En Vivo
+          </div>
         </div>
       </header>
 
@@ -173,6 +442,14 @@ const PharmacyQueue = () => {
             </div>
             <button className="p-3 bg-slate-50 text-slate-600 rounded-2xl hover:bg-slate-100 transition-colors">
               <Filter size={20} />
+            </button>
+            <button 
+              onClick={handleExportCSV}
+              disabled={isExporting}
+              className="p-3 bg-slate-50 text-slate-600 rounded-2xl hover:bg-slate-100 transition-colors disabled:opacity-50"
+              title="Exportar a CSV"
+            >
+              <Download size={20} className={isExporting ? 'animate-bounce' : ''} />
             </button>
           </div>
 
@@ -229,10 +506,17 @@ const PharmacyQueue = () => {
                   <div className="w-12 h-12 bg-[#023E8A] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#023E8A]/20">
                     <Pill size={24} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-xl font-bold text-slate-900">Detalle de Receta</h2>
                     <p className="text-xs text-slate-500 mt-1">Folio: {selectedPrescription.id.slice(0, 8).toUpperCase()}</p>
                   </div>
+                  <button 
+                    onClick={() => setEditingPrescription(selectedPrescription)}
+                    className="p-3 bg-white text-blue-600 border border-slate-100 rounded-2xl hover:bg-blue-50 transition-all shadow-sm"
+                    title="Editar Receta"
+                  >
+                    <Edit2 size={20} />
+                  </button>
                 </div>
 
                 <div className="space-y-4">
@@ -306,6 +590,21 @@ const PharmacyQueue = () => {
           )}
         </div>
       </div>
+
+      {editingPrescription && (
+        <EditPrescriptionModal 
+          prescription={editingPrescription}
+          onClose={() => setEditingPrescription(null)}
+          onSave={() => {
+            fetchPrescriptions();
+            if (selectedPrescription?.id === editingPrescription.id) {
+              // Update selected prescription with new data
+              const updated = prescriptions.find(p => p.id === editingPrescription.id);
+              if (updated) setSelectedPrescription(updated as any);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

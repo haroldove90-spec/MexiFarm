@@ -134,7 +134,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('FARMACIA AMÉRICA', 20, 25);
+    doc.text('MEXIFARM', 20, 25);
     doc.setFontSize(10);
     doc.text(`RECETA MÉDICA - ${dateStr.toUpperCase()}`, 20, 32);
 
