@@ -34,9 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(profileData);
       } else if (demoRole) {
         // Mock user for demo
-        setUser({ id: 'demo-user', email: 'demo@mediconnect.pro' } as any);
+        const demoId = '00000000-0000-0000-0000-000000000001';
+        setUser({ id: demoId, email: 'demo@mediconnect.pro' } as any);
         setProfile({
-          id: 'demo-user',
+          id: demoId,
           full_name: 'Dra. Hilda Martínez',
           role: demoRole as UserRole,
           cedula: '12345678',
@@ -60,9 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         const demoRole = localStorage.getItem('demo_role');
         if (demoRole) {
-          setUser({ id: 'demo-user', email: 'demo@mediconnect.pro' } as any);
+          const demoId = '00000000-0000-0000-0000-000000000001';
+          setUser({ id: demoId, email: 'demo@mediconnect.pro' } as any);
           setProfile({
-            id: 'demo-user',
+            id: demoId,
             full_name: 'Dra. Hilda Martínez',
             role: demoRole as UserRole,
             cedula: '12345678',

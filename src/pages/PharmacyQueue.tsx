@@ -292,12 +292,32 @@ const PharmacyQueue = () => {
         patientId = patients[0].id;
       }
 
+      const demoRole = localStorage.getItem('demo_role');
+      const userId = demoRole ? '00000000-0000-0000-0000-000000000001' : (await supabase.auth.getUser()).data.user?.id;
+      
+      if (demoRole && userId) {
+        const { data: profileExists } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .single();
+          
+        if (!profileExists) {
+          await supabase.from('profiles').insert([{
+            id: userId,
+            full_name: 'Dra. Hilda Martínez',
+            role: 'especialista',
+            especialidad: 'Medicina General'
+          }]);
+        }
+      }
+
       // 2. Create a sample consultation with prescription
       const { data: consultation, error: cError } = await supabase
         .from('consultations')
         .insert([{
           patient_id: patientId,
-          doctor_id: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000001',
+          doctor_id: userId,
           diagnostico: 'Infección respiratoria leve',
           plan_tratamiento: 'Tratamiento ambulatorio con antibióticos y analgésicos.',
           signos_vitales: { peso: 70, temp: 37.2, presion: '120/80' },

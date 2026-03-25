@@ -93,6 +93,24 @@ const Consultas = () => {
       } else {
         const demoRole = localStorage.getItem('demo_role');
         userId = demoRole ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000000';
+        
+        if (demoRole) {
+          // Ensure demo profile exists
+          const { data: profileExists } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', userId)
+            .single();
+            
+          if (!profileExists) {
+            await supabase.from('profiles').insert([{
+              id: userId,
+              full_name: 'Dra. Hilda Martínez',
+              role: 'especialista',
+              especialidad: 'Medicina General'
+            }]);
+          }
+        }
       }
 
       // First, check if we have any patients to link to

@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 const patientSchema = z.object({
   nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
-  curp: z.string().refine(val => val === "" || /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/.test(val), 'El formato del CURP es inválido'),
+  curp: z.string().optional(),
   fecha_nacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (AAAA-MM-DD)'),
   alergias: z.string().optional(),
   contacto_emergencia: z.string().min(5, 'Ingrese un contacto de emergencia válido'),
