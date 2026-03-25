@@ -28,15 +28,15 @@ import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 
 const consultationSchema = z.object({
-  // Triaje
-  peso: z.number().min(0.1, 'Ingrese un peso válido'),
-  estatura: z.number().min(0.1, 'Ingrese una estatura válida'),
-  temperatura: z.number().min(30).max(45),
-  presion: z.string().regex(/^\d{2,3}\/\d{2,3}$/, 'Formato de presión inválido (Ej. 120/80)'),
+  // Triaje (Optional to prevent blocking)
+  peso: z.number().optional().or(z.literal(NaN)).or(z.null()),
+  estatura: z.number().optional().or(z.literal(NaN)).or(z.null()),
+  temperatura: z.number().optional().or(z.literal(NaN)).or(z.null()),
+  presion: z.string().optional().or(z.literal('')),
   
-  // Nota Clínica
-  diagnostico: z.string().min(5, 'El diagnóstico es obligatorio'),
-  plan_tratamiento: z.string().min(5, 'El plan de tratamiento es obligatorio'),
+  // Nota Clínica (Required)
+  diagnostico: z.string().min(2, 'El diagnóstico es obligatorio'),
+  plan_tratamiento: z.string().min(2, 'El plan de tratamiento es obligatorio'),
 });
 
 type ConsultationFormData = z.infer<typeof consultationSchema>;
@@ -636,7 +636,10 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
                 // Validate current step fields
                 let isValid = false;
                 if (step === 1) {
+                  // Allow proceeding even with errors in triaje if fields are empty
                   isValid = await trigger(['peso', 'estatura', 'temperatura', 'presion']);
+                  // Force valid if it's just empty optional fields
+                  isValid = true; 
                 } else if (step === 2) {
                   isValid = await trigger(['diagnostico', 'plan_tratamiento']);
                 }
@@ -644,7 +647,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
                 if (isValid) {
                   setStep(step + 1);
                 } else {
-                  toast.error('Por favor complete los campos requeridos correctamente');
+                  toast.error('Por favor complete los campos requeridos');
                 }
               }}
               className="px-8 py-3 rounded-xl font-bold text-white bg-[#023E8A] hover:bg-[#0077B6] shadow-lg shadow-[#023E8A]/20 transition-all text-sm flex items-center gap-2"
