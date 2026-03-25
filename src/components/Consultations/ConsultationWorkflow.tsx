@@ -194,13 +194,7 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
   };
 
   const onSubmit = async (data: ConsultationFormData) => {
-    // Prevent submission if not on the final step (e.g., when hitting Enter on step 2)
-    if (step < 3) {
-      setStep(step + 1);
-      return;
-    }
-
-    console.log('Submitting consultation form...', data);
+    console.log('Final submission of consultation form...', data);
     setError(null);
     try {
       // Get user from auth session or demo mode
@@ -412,7 +406,15 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
             </div>
           )}
 
-          <form id="consultation-form" onSubmit={handleSubmit(onSubmit)}>
+          <form 
+            id="consultation-form" 
+            onSubmit={(e) => e.preventDefault()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
+          >
             {/* Step 1: Triaje */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
@@ -645,16 +647,14 @@ const ConsultationWorkflow: React.FC<ConsultationWorkflowProps> = ({ patient, on
             </button>
           ) : (
             <button
-              form="consultation-form"
-              type="submit"
+              type="button"
               disabled={isSubmitting}
-              onClick={async (e) => {
-                // Check for validation errors before submitting
+              onClick={async () => {
                 const isValid = await trigger();
-                if (!isValid) {
-                  e.preventDefault();
+                if (isValid) {
+                  handleSubmit(onSubmit)();
+                } else {
                   toast.error('Hay errores en el formulario. Por favor revise los pasos anteriores.');
-                  // Find first step with error and go there
                   if (errors.peso || errors.estatura || errors.temperatura || errors.presion) {
                     setStep(1);
                   } else if (errors.diagnostico || errors.plan_tratamiento) {
